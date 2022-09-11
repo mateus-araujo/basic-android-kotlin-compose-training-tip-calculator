@@ -5,9 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,7 +17,6 @@ import androidx.compose.ui.Alignment
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.TextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -33,6 +29,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material.*
+import androidx.compose.ui.graphics.Color
 
 import androidx.compose.ui.unit.dp
 import java.text.NumberFormat
@@ -64,18 +64,47 @@ fun EditNumberField(
         keyboardActions = keyboardActions,
         keyboardOptions = keyboardOptions,
         label = { Text(stringResource(label)) },
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         onValueChange = onValueChange,
         singleLine = true,
         value = value,
     )
 }
 
+@Composable
+fun RoundTheTipRow(
+    modifier: Modifier = Modifier,
+    onRoundUpChange: (Boolean) -> Unit,
+    roundUp: Boolean
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .size(48.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(stringResource(R.string.round_up_tip))
+        Switch(
+            colors = SwitchDefaults.colors(
+              uncheckedThumbColor = Color.DarkGray,
+            ),
+            checked = roundUp,
+            modifier = modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.End),
+            onCheckedChange = onRoundUpChange
+        )
+    }
+}
+
 private fun calculateTip(
     amount: Double,
+    roundUp: Boolean,
     tipPercent: Double,
 ): String {
-    val tip = tipPercent / 100 * amount
+    var tip = tipPercent / 100 * amount
+    if (roundUp)
+        tip = kotlin.math.ceil(tip)
     return NumberFormat.getCurrencyInstance().format(tip)
 }
 
@@ -83,10 +112,11 @@ private fun calculateTip(
 fun TipTimeScreen() {
     var amountInput by remember { mutableStateOf("") }
     var tipInput by remember { mutableStateOf("") }
+    var roundUp by remember { mutableStateOf(false) }
 
     val amount = amountInput.toDoubleOrNull() ?: 0.0;
     val tipPercent = tipInput.toDoubleOrNull() ?: 0.0;
-    val tip = calculateTip(amount, tipPercent);
+    val tip = calculateTip(amount, roundUp, tipPercent);
 
     val focusManager = LocalFocusManager.current
 
@@ -109,7 +139,6 @@ fun TipTimeScreen() {
                 imeAction = ImeAction.Next,
             ),
             label = R.string.bill_amount,
-            modifier = Modifier.fillMaxWidth(),
             onValueChange = { amountInput = it },
             value = amountInput
         )
@@ -124,6 +153,10 @@ fun TipTimeScreen() {
             label = R.string.how_was_the_service,
             onValueChange = { tipInput = it },
             value = tipInput
+        )
+        RoundTheTipRow(
+            onRoundUpChange = { roundUp = it },
+            roundUp = roundUp
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
